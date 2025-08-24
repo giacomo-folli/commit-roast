@@ -151,7 +151,6 @@ export async function getRecentEvents(
       throw new GitHubError("Invalid response format");
     }
 
-    console.log(transformEvents(data as GitHubEvent[]))
     return transformEvents(data as GitHubEvent[]);
   } catch (error: any) {
     if (
