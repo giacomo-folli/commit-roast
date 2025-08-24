@@ -1,47 +1,29 @@
-# GitHub Contributions Explorer
+# GitHub Activity Viewer
 
-A web app built with **Next.js 14** that takes a GitHub username and displays their contribution history, commit activity, and repository breakdown.  
-It pulls data directly from the **GitHub GraphQL API v4** and **REST API v3**, rendering a heatmap, per-repo stats, and a feed of recent commits.
+This project demonstrates a simple GitHub activity viewer built with Next.js 14, TypeScript and Tailwind CSS.
 
----
+## Getting Started
 
-## ✨ Features
+Install dependencies and start the development server:
 
-- 🔍 Search any GitHub username
-- 🗓 Contribution **heatmap** (last 12 months)
-- 📊 Commit totals, PRs, issues, reviews
-- 📂 Per-repo commit breakdown (sortable table)
-- 📝 Recent commits across public repos
-- ⚡ Server-side rendered (fast first load), cached results
-- 🔑 Optional GitHub login for higher API limits
-- 🌗 Clean Tailwind UI with dark mode support
-- 🚀 Deploy-ready on [Vercel](https://vercel.com/)
-
----
-
-## 🖼 Demo
-
-_(Add screenshot or deployed link here)_
-
----
-
-## 🛠 Tech Stack
-
-- [Next.js 14](https://nextjs.org/) (App Router, TypeScript)
-- [Tailwind CSS](https://tailwindcss.com/) for styling
-- [Recharts](https://recharts.org/) for charts & heatmap
-- [SWR](https://swr.vercel.app/) for client caching/revalidation
-- [Octokit](https://github.com/octokit) (GitHub GraphQL + REST clients)
-- [NextAuth.js](https://next-auth.js.org/) (optional GitHub OAuth)
-- [Zod](https://zod.dev/) for input validation
-- [Vercel KV](https://vercel.com/storage/kv) (optional caching backend)
-
----
-
-## ⚙️ Setup
-
-### 1. Clone repo
 ```bash
-git clone https://github.com/your-username/github-contributions-explorer.git
-cd github-contributions-explorer
+pnpm install
+pnpm dev
+```
 
+## Tests
+
+```bash
+pnpm test
+```
+
+## Environment Variables
+
+The following variables enable authentication and higher API limits:
+
+- `GITHUB_ID` and `GITHUB_SECRET` – GitHub OAuth credentials for NextAuth.
+- `GITHUB_TOKEN` – Personal Access Token used for API requests.
+
+## Deployment
+
+The app can be deployed to platforms like Vercel using `pnpm build`.
