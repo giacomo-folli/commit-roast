@@ -1,16 +1,7 @@
-import NextAuth, { AuthOptions, DefaultSession } from "next-auth";
+import { AuthOptions } from "next-auth";
 import GitHub from "next-auth/providers/github";
 
-declare module "next-auth" {
-  interface Session extends DefaultSession {
-    accessToken?: string;
-    user?: {
-      name?: string | null;
-    } & DefaultSession["user"];
-  }
-}
-
-const authOptions: AuthOptions = {
+export const authOptions: AuthOptions = {
   providers: [
     GitHub({
       clientId: process.env.GITHUB_ID ?? "",
@@ -34,6 +25,3 @@ const authOptions: AuthOptions = {
     },
   },
 };
-
-const handler = NextAuth(authOptions);
-export { handler as GET, handler as POST };

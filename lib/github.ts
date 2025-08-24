@@ -1,6 +1,6 @@
 import { Octokit } from "octokit";
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "@/lib/auth";
 
 export async function getOctokit() {
   const session = await getServerSession(authOptions);
@@ -27,6 +27,19 @@ export class GitHubError extends Error {
     super(message);
     this.name = "GitHubError";
   }
+}
+
+interface GitHubApiError {
+  status: number;
+  headers?: {
+    "x-ratelimit-reset"?: string;
+  };
+  message?: string;
+  response?: {
+    headers: {
+      "x-ratelimit-reset"?: string;
+    };
+  };
 }
 
 export async function getContributions(
@@ -68,10 +81,11 @@ export async function getContributions(
     }
 
     return transformCalendar(result);
-  } catch (error: any) {
-    if (error.status === 403 && error.headers?.["x-ratelimit-reset"]) {
+  } catch (error) {
+    const apiError = error as GitHubApiError;
+    if (apiError.status === 403 && apiError.headers?.["x-ratelimit-reset"]) {
       const resetAt = new Date(
-        Number(error.headers["x-ratelimit-reset"]) * 1000,
+        Number(apiError.headers["x-ratelimit-reset"]) * 1000,
       );
       const waitTime = resetAt.getTime() - Date.now();
 
@@ -89,8 +103,8 @@ export async function getContributions(
     }
 
     throw new GitHubError(
-      error.message || "Failed to fetch contributions",
-      error.status,
+      apiError?.message || "Failed to fetch contributions",
+      apiError?.status,
     );
   }
 }
@@ -152,13 +166,14 @@ export async function getRecentEvents(
     }
 
     return transformEvents(data as GitHubEvent[]);
-  } catch (error: any) {
+  } catch (error) {
+    const apiError = error as GitHubApiError;
     if (
-      error.status === 403 &&
-      error.response?.headers?.["x-ratelimit-reset"]
+      apiError.status === 403 &&
+      apiError.response?.headers?.["x-ratelimit-reset"]
     ) {
       const resetAt = new Date(
-        Number(error.response.headers["x-ratelimit-reset"]) * 1000,
+        Number(apiError.response.headers["x-ratelimit-reset"]) * 1000,
       );
       const waitTime = resetAt.getTime() - Date.now();
 
@@ -171,7 +186,7 @@ export async function getRecentEvents(
       throw new GitHubError("GitHub API rate limit exceeded", 403, resetAt);
     }
 
-    if (error.status === 404) {
+    if (apiError?.status === 404) {
       throw new GitHubError(`User ${username} not found`, 404);
     }
 
@@ -180,8 +195,8 @@ export async function getRecentEvents(
     }
 
     throw new GitHubError(
-      error.message || "Failed to fetch events",
-      error.status,
+      apiError?.message || "Failed to fetch events",
+      apiError?.status,
     );
   }
 }
