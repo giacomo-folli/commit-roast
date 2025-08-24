@@ -7,8 +7,8 @@ export default function Header() {
   const { data: session, status } = useSession();
 
   return (
-    <header className="border-b p-4 flex justify-between items-center">
-      <Link href="/" className="font-bold text-xl">
+    <header className="border-b-2 border-black p-4 flex justify-between items-center bg-white">
+      <Link href="/" className="font-bold text-2xl">
         GitHub Activity
       </Link>
       <div>
@@ -16,10 +16,10 @@ export default function Header() {
           <span>Loading...</span>
         ) : session?.user ? (
           <div className="flex gap-4 items-center">
-            <span>{session.user.name}</span>
+            <span className="font-bold">{session.user.name}</span>
             <button
               onClick={() => signOut()}
-              className="px-4 py-2 bg-gray-100 rounded"
+              className="border-2 border-black px-4 py-2 bg-white text-black"
             >
               Sign Out
             </button>
@@ -27,7 +27,7 @@ export default function Header() {
         ) : (
           <button
             onClick={() => signIn("github")}
-            className="px-4 py-2 bg-gray-900 text-white rounded"
+            className="border-2 border-black px-4 py-2 bg-black text-white"
           >
             Sign in with GitHub
           </button>

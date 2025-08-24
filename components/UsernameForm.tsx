@@ -29,17 +29,19 @@ export default function UsernameForm() {
     <form onSubmit={onSubmit} className="flex flex-col gap-2" aria-busy="false">
       <div className="flex gap-2">
         <input
-          className={`border p-2 text-black ${error ? "border-red-500" : ""}`}
+          className={`border-2 border-black px-4 py-2 bg-white text-black ${
+            error ? "border-red-600" : ""
+          }`}
           value={value}
           onChange={handleChange}
           aria-label="GitHub username"
           aria-invalid={!!error}
         />
-        <button className="bg-blue-500 text-white px-4" type="submit">
+        <button className="border-2 border-black px-4 py-2 bg-black text-white" type="submit">
           View
         </button>
       </div>
-      {error && <p className="text-red-500 text-sm">{error}</p>}
+      {error && <p className="text-red-600 text-sm">{error}</p>}
     </form>
   );
 }

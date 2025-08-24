@@ -7,15 +7,17 @@ interface Commit {
 
 export default function RecentCommits({ commits }: { commits: Commit[] }) {
   return (
-    <ul>
+    <ul className="border-2 border-black">
       {commits.map((c, i) => (
-        <li key={i} className="w-full flex items-center justify-between">
+        <li
+          key={i}
+          className="flex items-center justify-between p-2 border-b border-black last:border-b-0"
+        >
           <div>
             <a href={c.url} className="underline">
               {c.message}
             </a>
           </div>
-
           <div>
             ({c.repo} - {c.date})
           </div>
