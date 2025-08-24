@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { usernameSchema } from "@/lib/validation";
 import { getCache, setCache } from "@/lib/cache";
-import { transformEvents } from "@/lib/github";
+import { getRecentEvents } from "@/lib/github";
 
 export async function GET(req: NextRequest) {
   const username = req.nextUrl.searchParams.get("username") ?? "";
@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
   if (cached) {
     return NextResponse.json(cached);
   }
-  const data = transformEvents([]);
+  const data = await getRecentEvents(username);
   setCache(key, data);
   return NextResponse.json(data);
 }
