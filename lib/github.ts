@@ -1,8 +1,8 @@
 import { Octokit } from "octokit";
 
-export const octokit = new Octokit({
-  auth: process.env.GITHUB_TOKEN,
-});
+export const octokit = process.env.GITHUB_TOKEN
+  ? new Octokit({ auth: process.env.GITHUB_TOKEN })
+  : new Octokit();
 
 export async function fetchGraphQL(
   query: string,
@@ -12,6 +12,17 @@ export async function fetchGraphQL(
 }
 
 export type CalendarDay = { date: string; count: number };
+
+export class GitHubError extends Error {
+  constructor(
+    message: string,
+    public readonly status?: number,
+    public readonly resetAt?: Date,
+  ) {
+    super(message);
+    this.name = "GitHubError";
+  }
+}
 
 export async function getContributions(
   username: string,
@@ -34,31 +45,73 @@ export async function getContributions(
       }
     }
   `;
-  const result = (await fetchGraphQL(query, {
-    username,
-    from,
-    to,
-  })) as CalendarResponse;
-  return transformCalendar(result);
+
+  try {
+    const result = (await fetchGraphQL(query, {
+      username,
+      from,
+      to,
+    })) as CalendarResponse;
+
+    // Add validation for the response
+    if (!result?.user) {
+      throw new GitHubError(`User ${username} not found`);
+    }
+
+    if (!result.user.contributionsCollection?.contributionCalendar) {
+      throw new GitHubError("Unable to fetch contribution calendar");
+    }
+
+    return transformCalendar(result);
+  } catch (error: any) {
+    if (error.status === 403 && error.headers?.["x-ratelimit-reset"]) {
+      const resetAt = new Date(
+        Number(error.headers["x-ratelimit-reset"]) * 1000,
+      );
+      const waitTime = resetAt.getTime() - Date.now();
+
+      // If reset is within 10 seconds, wait and retry
+      if (waitTime > 0 && waitTime <= 10000) {
+        await new Promise((resolve) => setTimeout(resolve, waitTime));
+        return getContributions(username, from, to);
+      }
+
+      throw new GitHubError("GitHub API rate limit exceeded", 403, resetAt);
+    }
+
+    if (error instanceof GitHubError) {
+      throw error;
+    }
+
+    throw new GitHubError(
+      error.message || "Failed to fetch contributions",
+      error.status,
+    );
+  }
 }
 
 interface CalendarResponse {
   user?: {
     contributionsCollection?: {
       contributionCalendar?: {
-        weeks: { contributionDays: { date: string; contributionCount: number }[] }[];
+        weeks: {
+          contributionDays: { date: string; contributionCount: number }[];
+        }[];
       };
     };
   };
 }
 
 export function transformCalendar(data: CalendarResponse): CalendarDay[] {
-  const weeks =
-    data.user?.contributionsCollection?.contributionCalendar?.weeks ?? [];
   const days: CalendarDay[] = [];
+  const weeks =
+    data?.user?.contributionsCollection?.contributionCalendar?.weeks ?? [];
+
   for (const week of weeks) {
-    for (const day of week.contributionDays) {
-      days.push({ date: day.date, count: day.contributionCount });
+    if (week.contributionDays) {
+      for (const day of week.contributionDays) {
+        days.push({ date: day.date, count: day.contributionCount });
+      }
     }
   }
   return days;
@@ -79,11 +132,52 @@ export interface RepoStat {
 export async function getRecentEvents(
   username: string,
 ): Promise<{ commits: Commit[]; repos: RepoStat[] }> {
-  const { data } = await octokit.request("GET /users/{username}/events", {
-    username,
-    per_page: 100,
-  });
-  return transformEvents(data as GitHubEvent[]);
+  try {
+    const { data } = await octokit.request("GET /users/{username}/events", {
+      username,
+      per_page: 100,
+      headers: {
+        timeout: "5000", // Add 5s timeout
+      },
+    });
+
+    if (!Array.isArray(data)) {
+      throw new GitHubError("Invalid response format");
+    }
+
+    return transformEvents(data as GitHubEvent[]);
+  } catch (error: any) {
+    if (
+      error.status === 403 &&
+      error.response?.headers?.["x-ratelimit-reset"]
+    ) {
+      const resetAt = new Date(
+        Number(error.response.headers["x-ratelimit-reset"]) * 1000,
+      );
+      const waitTime = resetAt.getTime() - Date.now();
+
+      // If reset is within 10 seconds, wait and retry
+      if (waitTime > 0 && waitTime <= 10000) {
+        await new Promise((resolve) => setTimeout(resolve, waitTime));
+        return getRecentEvents(username);
+      }
+
+      throw new GitHubError("GitHub API rate limit exceeded", 403, resetAt);
+    }
+
+    if (error.status === 404) {
+      throw new GitHubError(`User ${username} not found`, 404);
+    }
+
+    if (error instanceof GitHubError) {
+      throw error;
+    }
+
+    throw new GitHubError(
+      error.message || "Failed to fetch events",
+      error.status,
+    );
+  }
 }
 
 interface GitHubEvent {
@@ -93,9 +187,10 @@ interface GitHubEvent {
   payload: { commits?: { sha: string; message: string }[] };
 }
 
-export function transformEvents(
-  events: GitHubEvent[],
-): { commits: Commit[]; repos: RepoStat[] } {
+export function transformEvents(events: GitHubEvent[]): {
+  commits: Commit[];
+  repos: RepoStat[];
+} {
   const commits: Commit[] = [];
   const repoMap: Record<string, number> = {};
   for (const event of events) {
