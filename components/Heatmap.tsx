@@ -7,11 +7,10 @@ import {
   XAxis,
   YAxis,
   Tooltip,
-  Legend,
   Scatter,
 } from "recharts";
 
-const COLORS = ["#ebedf0", "#c6e48b", "#7bc96f", "#239a3b", "#196127"];
+const COLORS = ["#ebebeb", "#d5d5d5", "#a9a9a9", "#595959", "#111111"];
 
 function getColor(count: number) {
   if (count === 0) return COLORS[0];
@@ -32,18 +31,47 @@ export default function Heatmap({ data }: { data: CalendarDay[] }) {
     };
   });
 
+  const monthLabels = heatData
+    .map((d, i) => {
+      const date = new Date(d.date);
+      const month = date.getUTCMonth();
+      const prevDate = i > 0 ? new Date(heatData[i - 1].date) : null;
+      const prevMonth = prevDate ? prevDate.getUTCMonth() : -1;
+      if (month !== prevMonth) {
+        return {
+          week: d.week,
+          label: date.toLocaleString("default", { month: "short" }),
+        };
+      }
+      return null;
+    })
+    .filter(Boolean) as { week: number; label: string }[];
+
   const weeks = Math.max(...heatData.map((d) => d.week), 0) + 1;
-  const dayLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const dayLabels = ["", "Mon", "", "Wed", "", "Fri", ""];
   const CELL = 11;
 
   return (
-    <div className="w-full h-40 border-2 border-black bg-white">
+    <div className="w-full h-48 border-2 border-black bg-white text-black">
       <ResponsiveContainer>
         <ScatterChart
           data={heatData}
-          margin={{ top: 5, right: 5, bottom: 5, left: 5 }}
+          margin={{ right: 5, left: 5, bottom: 20, top: 20 }}
         >
-          <XAxis type="number" dataKey="week" hide domain={[0, weeks]} />
+          <XAxis
+            type="number"
+            dataKey="week"
+            domain={[0, weeks]}
+            tickFormatter={(v) =>
+              monthLabels.find((l) => l.week === v)?.label || ""
+            }
+            ticks={monthLabels.map((l) => l.week)}
+            axisLine={false}
+            tickLine={false}
+            tick={{ fill: "#000" }}
+            height={20}
+            tickMargin={5}
+          />
           <YAxis
             type="number"
             dataKey="day"
@@ -51,9 +79,12 @@ export default function Heatmap({ data }: { data: CalendarDay[] }) {
             ticks={[0, 1, 2, 3, 4, 5, 6]}
             axisLine={false}
             tickLine={false}
+            reversed
+            tick={{ fill: "#000" }}
+            tickMargin={5}
           />
           <Tooltip
-            cursor={{ stroke: "#000", strokeWidth: 1 }}
+            cursor={{ stroke: "#000", strokeWidth: 2 }}
             content={({ payload }) => {
               if (payload && payload.length > 0) {
                 const { date, count } = payload[0].payload as {
@@ -61,8 +92,8 @@ export default function Heatmap({ data }: { data: CalendarDay[] }) {
                   count: number;
                 };
                 return (
-                  <div className="bg-white border border-black p-1 text-xs">
-                    {date}: {count} {count === 1 ? "commit" : "commits"}
+                  <div className="bg-white border-2 border-black p-1 text-xs">
+                    {count} {count === 1 ? "commit" : "commits"} on {date}
                   </div>
                 );
               }
@@ -71,36 +102,17 @@ export default function Heatmap({ data }: { data: CalendarDay[] }) {
           />
           <Scatter
             data={heatData}
-            shape={({
-              cx,
-              cy,
-              payload,
-            }: {
-              cx: number;
-              cy: number;
-              payload: { count: number };
-            }) => (
+            shape={({ cx, cy, payload }: any) => (
               <rect
                 x={cx - CELL / 2}
                 y={cy - CELL / 2}
                 width={CELL}
                 height={CELL}
                 fill={getColor(payload.count)}
+                stroke="#fff"
+                strokeWidth={1}
               />
             )}
-          />
-          <Legend
-            align="right"
-            verticalAlign="top"
-            iconType="square"
-            payload={[
-              { value: "Less", type: "square", color: COLORS[0] },
-              { value: "", type: "square", color: COLORS[1] },
-              { value: "", type: "square", color: COLORS[2] },
-              { value: "", type: "square", color: COLORS[3] },
-              { value: "More", type: "square", color: COLORS[4] },
-            ]}
-            wrapperStyle={{ paddingTop: 4 }}
           />
         </ScatterChart>
       </ResponsiveContainer>
