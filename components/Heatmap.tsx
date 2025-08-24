@@ -71,7 +71,15 @@ export default function Heatmap({ data }: { data: CalendarDay[] }) {
           />
           <Scatter
             data={heatData}
-            shape={({ cx, cy, payload }) => (
+            shape={({
+              cx,
+              cy,
+              payload,
+            }: {
+              cx: number;
+              cy: number;
+              payload: { count: number };
+            }) => (
               <rect
                 x={cx - CELL / 2}
                 y={cy - CELL / 2}
