@@ -7,10 +7,9 @@ import { getContributions, getRecentEvents, GitHubError } from "@/lib/github";
 export default async function Page({
   params,
 }: {
-  params: { username: string }
+  params: { username: string };
 }) {
   const { username } = params;
-  console.log("PARAMS", params);
 
   try {
     const calendar = await getContributions(username);
@@ -18,11 +17,10 @@ export default async function Page({
 
     return (
       <main className="p-4">
-        {/* <ProfileCard username={username} />
+        <ProfileCard username={username} />
         <Heatmap data={calendar} />
         <RepoTable repos={recent.repos} />
-        <RecentCommits commits={recent.commits} /> */}
-        aaa
+        <RecentCommits commits={recent.commits} />
       </main>
     );
   } catch (error) {

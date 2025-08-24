@@ -1,13 +1,18 @@
 import { Octokit } from "octokit";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
-export const octokit = process.env.GITHUB_TOKEN
-  ? new Octokit({ auth: process.env.GITHUB_TOKEN })
-  : new Octokit();
+export async function getOctokit() {
+  const session = await getServerSession(authOptions);
+  const token = session?.accessToken || process.env.GITHUB_TOKEN;
+  return token ? new Octokit({ auth: token }) : new Octokit();
+}
 
 export async function fetchGraphQL(
   query: string,
   variables: Record<string, unknown>,
 ) {
+  const octokit = await getOctokit();
   return octokit.graphql(query, variables);
 }
 
@@ -133,7 +138,8 @@ export async function getRecentEvents(
   username: string,
 ): Promise<{ commits: Commit[]; repos: RepoStat[] }> {
   try {
-    const { data } = await octokit.request("GET /users/{username}/events", {
+    const okt = await getOctokit();
+    const { data } = await okt.request("GET /users/{username}/events", {
       username,
       per_page: 100,
       headers: {
@@ -145,6 +151,7 @@ export async function getRecentEvents(
       throw new GitHubError("Invalid response format");
     }
 
+    console.log(transformEvents(data as GitHubEvent[]))
     return transformEvents(data as GitHubEvent[]);
   } catch (error: any) {
     if (
