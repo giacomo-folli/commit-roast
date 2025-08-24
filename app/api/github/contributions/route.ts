@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { contributionsSchema } from "@/lib/validation";
 import { getCache, setCache } from "@/lib/cache";
-import { transformCalendar } from "@/lib/github";
+import { getContributions } from "@/lib/github";
 
 export async function POST(req: NextRequest) {
   const json = await req.json();
@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
   if (cached) {
     return NextResponse.json(cached);
   }
-  const data = transformCalendar({ username, from, to });
+  const data = await getContributions(username, from, to);
   setCache(key, data);
   return NextResponse.json(data);
 }
