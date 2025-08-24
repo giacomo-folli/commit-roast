@@ -16,7 +16,7 @@ export default async function Page({
     const recent = await getRecentEvents(username);
 
     return (
-      <main className="p-4">
+      <main className="p-4 space-y-4">
         <ProfileCard username={username} />
         <Heatmap data={calendar} />
         <RepoTable repos={recent.repos} />
@@ -28,9 +28,9 @@ export default async function Page({
       const resetTime = error.resetAt?.toLocaleTimeString() || "unknown time";
       return (
         <main className="p-4">
-          <div className="bg-red-50 border border-red-200 p-4 rounded">
-            <h2 className="text-red-800 font-bold">Rate Limit Exceeded</h2>
-            <p className="text-red-700">
+          <div className="border-2 border-black p-4 text-red-600">
+            <h2 className="font-bold">Rate Limit Exceeded</h2>
+            <p>
               GitHub API rate limit exceeded. Please try again after {resetTime}
               .
             </p>
@@ -41,11 +41,9 @@ export default async function Page({
 
     return (
       <main className="p-4">
-        <div className="bg-red-50 border border-red-200 p-4 rounded">
-          <h2 className="text-red-800 font-bold">Error</h2>
-          <p className="text-red-700">
-            Failed to load GitHub data. Please try again later.
-          </p>
+        <div className="border-2 border-black p-4 text-red-600">
+          <h2 className="font-bold">Error</h2>
+          <p>Failed to load GitHub data. Please try again later.</p>
         </div>
       </main>
     );
